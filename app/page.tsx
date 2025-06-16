@@ -1,17 +1,18 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle, Calculator, DollarSign, Globe, Share2, TrendingUp } from 'lucide-react';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Slider } from '@/components/ui/slider';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { TrendingUp, Calculator, Share2, AlertCircle, DollarSign, Globe } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
 import { useLanguage } from '@/hooks/use-language';
 
 interface CalculatorInputs {
@@ -58,57 +59,6 @@ export default function PortfolioCalculator() {
   const [result, setResult] = useState<CalculationResult | null>(null);
   const [sliderRange, setSliderRange] = useState([120, 150]);
   const [targetAverageInput, setTargetAverageInput] = useState('135');
-
-  const PRESETS = [
-    {
-      name: t('presets.techStock'),
-      data: { currentHoldings: 100, averageCost: 150, marketPrice: 120, maxInvestment: 5000, currency: 'BDT' }
-    },
-    {
-      name: t('presets.valueInvestment'),
-      data: { currentHoldings: 250, averageCost: 45, marketPrice: 38, maxInvestment: 3000, currency: 'BDT' }
-    },
-    {
-      name: t('presets.growthStock'),
-      data: { currentHoldings: 50, averageCost: 200, marketPrice: 180, maxInvestment: 8000, currency: 'BDT' }
-    },
-    {
-      name: t('presets.dividendStock'),
-      data: { currentHoldings: 300, averageCost: 75, marketPrice: 70, maxInvestment: 4000, currency: 'BDT' }
-    }
-  ];
-
-  // Load from URL parameters
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const urlInputs = { ...inputs };
-    
-    Object.keys(inputs).forEach(key => {
-      const value = params.get(key);
-      if (value && key !== 'currency') {
-        (urlInputs as any)[key] = parseFloat(value);
-      } else if (value && key === 'currency') {
-        (urlInputs as any)[key] = value;
-      }
-    });
-
-    setInputs(urlInputs);
-    setTargetAverageInput(urlInputs.targetAverage.toString());
-  }, []);
-
-  // Update slider range when market price or average cost changes
-  useEffect(() => {
-    const min = Math.min(inputs.marketPrice, inputs.averageCost);
-    const max = Math.max(inputs.marketPrice, inputs.averageCost);
-    setSliderRange([min, max]);
-    
-    // Set target average to middle of range if not set or out of range
-    if (inputs.targetAverage < min || inputs.targetAverage > max) {
-      const newTarget = (min + max) / 2;
-      setInputs(prev => ({ ...prev, targetAverage: newTarget }));
-      setTargetAverageInput(newTarget.toString());
-    }
-  }, [inputs.marketPrice, inputs.averageCost]);
 
   const calculateAdjustment = useCallback((calculatorInputs: CalculatorInputs): CalculationResult => {
     const { currentHoldings, averageCost, marketPrice, maxInvestment, targetAverage } = calculatorInputs;
@@ -208,10 +158,77 @@ export default function PortfolioCalculator() {
     };
   }, [t]);
 
+  const PRESETS = [
+    {
+      name: t('presets.techStock'),
+      data: { currentHoldings: 100, averageCost: 150, marketPrice: 120, maxInvestment: 5000, currency: 'BDT' }
+    },
+    {
+      name: t('presets.valueInvestment'),
+      data: { currentHoldings: 250, averageCost: 45, marketPrice: 38, maxInvestment: 3000, currency: 'BDT' }
+    },
+    {
+      name: t('presets.growthStock'),
+      data: { currentHoldings: 50, averageCost: 200, marketPrice: 180, maxInvestment: 8000, currency: 'BDT' }
+    },
+    {
+      name: t('presets.dividendStock'),
+      data: { currentHoldings: 300, averageCost: 75, marketPrice: 70, maxInvestment: 4000, currency: 'BDT' }
+    }
+  ];
+
+  // Load from URL parameters
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlInputs = { ...inputs };
+    let hasChanges = false;
+    
+    Object.keys(inputs).forEach(key => {
+      const value = params.get(key);
+      if (value && key !== 'currency') {
+        const numValue = parseFloat(value);
+        if (!isNaN(numValue) && numValue !== urlInputs[key as keyof CalculatorInputs]) {
+          (urlInputs as any)[key] = numValue;
+          hasChanges = true;
+        }
+      } else if (value && key === 'currency') {
+        if (value !== urlInputs[key as keyof CalculatorInputs]) {
+          (urlInputs as any)[key] = value;
+          hasChanges = true;
+        }
+      }
+    });
+
+    if (hasChanges) {
+      setInputs(urlInputs);
+      setTargetAverageInput(urlInputs.targetAverage.toString());
+    }
+  }, []); // Empty dependency array since we only want to run this once on mount
+
+  // Update slider range when market price or average cost changes
+  useEffect(() => {
+    const min = Math.min(inputs.marketPrice, inputs.averageCost);
+    const max = Math.max(inputs.marketPrice, inputs.averageCost);
+    
+    if (min !== sliderRange[0] || max !== sliderRange[1]) {
+      setSliderRange([min, max]);
+    }
+    
+    // Set target average to middle of range if not set or out of range
+    if (inputs.targetAverage < min || inputs.targetAverage > max) {
+      const newTarget = (min + max) / 2;
+      setInputs(prev => ({ ...prev, targetAverage: newTarget }));
+      setTargetAverageInput(newTarget.toString());
+    }
+  }, [inputs.marketPrice, inputs.averageCost, sliderRange]);
+
+  // Calculate result when inputs change
   useEffect(() => {
     const newResult = calculateAdjustment(inputs);
-    setResult(newResult);
-  }, [inputs, calculateAdjustment]);
+    if (JSON.stringify(newResult) !== JSON.stringify(result)) {
+      setResult(newResult);
+    }
+  }, [inputs, calculateAdjustment, result]);
 
   const formatCurrency = (amount: number, currencyCode: string): string => {
     const currency = CURRENCIES.find(c => c.code === currencyCode);
