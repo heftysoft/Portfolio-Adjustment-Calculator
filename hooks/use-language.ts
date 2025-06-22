@@ -1,5 +1,6 @@
 import { Language, translations } from '@/lib/translations';
 import { useEffect, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 type Join<K, P> = K extends string | number ?
   P extends string | number ?
@@ -15,33 +16,49 @@ type Paths<T, D extends number = 3> = [D] extends [never] ? never : T extends ob
 type Prev = [never, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 export function useLanguage() {
-  const [language, setLanguage] = useState<Language>('bn'); // Default to Bangla
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  
+  const [language, setLanguage] = useState<Language>(() => {
+    // For initial render, use URL param or default. This is safe for SSR.
+    const urlLang = searchParams.get('lang') as Language;
+    return (urlLang && translations[urlLang]) ? urlLang : 'bn';
+  });
 
   useEffect(() => {
-    // Check URL parameters for language
-    const params = new URLSearchParams(window.location.search);
-    const urlLang = params.get('lang') as Language;
-    
+    // This effect runs only on the client.
+    const urlLang = searchParams.get('lang') as Language;
     if (urlLang && translations[urlLang]) {
-      setLanguage(urlLang);
+      // If URL has lang, it's the source of truth.
+      if (language !== urlLang) {
+        setLanguage(urlLang);
+        localStorage.setItem('portfolio-calculator-lang', urlLang);
+      }
     } else {
-      // Check localStorage
+      // If no lang in URL, check localStorage.
       const savedLang = localStorage.getItem('portfolio-calculator-lang') as Language;
-      if (savedLang && translations[savedLang]) {
+      if (savedLang && translations[savedLang] && savedLang !== language) {
         setLanguage(savedLang);
       }
     }
-  }, []);
+  }, [searchParams]);
+
+  useEffect(() => {
+    // This effect syncs the `language` state back to the URL and localStorage.
+    if (!language) return;
+    
+    localStorage.setItem('portfolio-calculator-lang', language);
+
+    const params = new URLSearchParams(searchParams.toString());
+    if (params.get('lang') !== language) {
+      params.set('lang', language);
+      router.replace(`${pathname}?${params.toString()}`);
+    }
+  }, [language]);
 
   const changeLanguage = (newLang: Language) => {
     setLanguage(newLang);
-    localStorage.setItem('portfolio-calculator-lang', newLang);
-    
-    // Update URL parameter
-    const params = new URLSearchParams(window.location.search);
-    params.set('lang', newLang);
-    const newUrl = `${window.location.pathname}?${params.toString()}`;
-    window.history.replaceState({}, '', newUrl);
   };
 
   const t = (key: Paths<typeof translations.en>): string => {

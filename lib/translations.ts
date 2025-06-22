@@ -41,6 +41,16 @@ export const translations = {
     messages: {
       investmentLimited: 'Investment limited by maximum budget. Achievable average:',
       calculationSuccessful: 'Adjustment calculation successful'
+    },
+    currencies: {
+      BDT: 'Bangladeshi Taka',
+      USD: 'US Dollar',
+      EUR: 'Euro',
+      GBP: 'British Pound',
+      JPY: 'Japanese Yen',
+      CAD: 'Canadian Dollar',
+      AUD: 'Australian Dollar',
+      INR: 'Indian Rupee',
     }
   },
   bn: {
@@ -84,7 +94,17 @@ export const translations = {
     },
     messages: {
       investmentLimited: 'সর্বোচ্চ বাজেট দ্বারা বিনিয়োগ সীমিত। অর্জনযোগ্য গড়:',
-      calculationSuccessful: 'সমন্বয় গণনা সফল'
+      calculationSuccessful: 'সমন্বয় গণনা সফল হয়েছে'
+    },
+    currencies: {
+      BDT: 'বাংলাদেশী টাকা',
+      USD: 'মার্কিন ডলার',
+      EUR: 'ইউরো',
+      GBP: 'ব্রিটিশ পাউন্ড',
+      JPY: 'জাপানি ইয়েন',
+      CAD: 'কানাডিয়ান ডলার',
+      AUD: 'অস্ট্রেলিয়ান ডলার',
+      INR: 'ভারতীয় রুপি' ,
     }
   }
 };
